@@ -1,0 +1,27 @@
+type Import {
+  id: ID!
+  productId: ID!
+  quantity: Float!
+  costPrice: Float!
+  userId: ID!
+  note: String
+  date: String!
+}
+
+input NewImport {
+  productId: ID!
+  quantity: Float!
+  costPrice: Float!
+  note: String
+}
+
+extend type Query {
+  imports: [Import!]!
+  import(id: ID!): Import
+  importsByProduct(productId: ID!): [Import!]!
+}
+
+extend type Mutation {
+  createImport(input: NewImport!): Import!
+  deleteImport(id: ID!): Boolean!
+}

@@ -1,0 +1,44 @@
+type User {
+  id: ID!
+  username: String!
+  role: String!
+  firstName: String!
+  lastName: String!
+  phone: String!
+  status: String!
+}
+
+input NewUser {
+  username: String!
+  password: String!
+  role: String!
+  firstName: String!
+  lastName: String!
+  phone: String!
+}
+
+input UpdateUser {
+  role: String
+  firstName: String
+  lastName: String
+  phone: String
+  status: String
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+extend type Query {
+  me: User
+  users: [User!]!
+  user(id: ID!): User
+}
+
+extend type Mutation {
+  login(username: String!, password: String!): AuthPayload!
+  createUser(input: NewUser!): User!
+  updateUser(id: ID!, input: UpdateUser!): User!
+  deleteUser(id: ID!): Boolean!
+}

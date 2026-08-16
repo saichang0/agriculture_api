@@ -1,0 +1,31 @@
+type Expense {
+  id: ID!
+  userId: ID!
+  title: String!
+  type: String!
+  amount: Float!
+  date: String!
+}
+
+input NewExpense {
+  title: String!
+  type: String!
+  amount: Float!
+}
+
+input UpdateExpense {
+  title: String
+  type: String
+  amount: Float
+}
+
+extend type Query {
+  expenses: [Expense!]!
+  expense(id: ID!): Expense
+}
+
+extend type Mutation {
+  createExpense(input: NewExpense!): Expense!
+  updateExpense(id: ID!, input: UpdateExpense!): Expense!
+  deleteExpense(id: ID!): Boolean!
+}

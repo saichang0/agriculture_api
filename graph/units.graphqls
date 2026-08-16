@@ -1,0 +1,23 @@
+type Unit {
+  id: ID!
+  name: String!
+}
+
+input NewUnit {
+  name: String!
+}
+
+input UpdateUnit {
+  name: String
+}
+
+extend type Query {
+  units: [Unit!]!
+  unit(id: ID!): Unit
+}
+
+extend type Mutation {
+  createUnit(input: NewUnit!): Unit!
+  updateUnit(id: ID!, input: UpdateUnit!): Unit!
+  deleteUnit(id: ID!): Boolean!
+}

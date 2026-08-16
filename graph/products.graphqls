@@ -1,0 +1,55 @@
+type Product {
+  id: ID!
+  barcode: String
+  name: String!
+  imageUrl: String
+  categoryId: ID!
+  unitId: ID!
+  costPrice: Float!
+  retailPrice: Float!
+  wholesalePrice: Float!
+  wholesaleMinQty: Int!
+  stockQty: Float!
+  minStockAlert: Float!
+  status: String!
+}
+
+input NewProduct {
+  barcode: String
+  name: String!
+  imageUrl: String
+  categoryId: ID!
+  unitId: ID!
+  costPrice: Float!
+  retailPrice: Float!
+  wholesalePrice: Float!
+  wholesaleMinQty: Int!
+  stockQty: Float!
+  minStockAlert: Float!
+}
+
+input UpdateProduct {
+  barcode: String
+  name: String
+  imageUrl: String
+  categoryId: ID
+  unitId: ID
+  costPrice: Float
+  retailPrice: Float
+  wholesalePrice: Float
+  wholesaleMinQty: Int
+  stockQty: Float
+  minStockAlert: Float
+  status: String
+}
+
+extend type Query {
+  products: [Product!]!
+  product(id: ID!): Product
+}
+
+extend type Mutation {
+  createProduct(input: NewProduct!): Product!
+  updateProduct(id: ID!, input: UpdateProduct!): Product!
+  deleteProduct(id: ID!): Boolean!
+}

@@ -1,0 +1,59 @@
+type SaleItem {
+  id: ID!
+  saleId: ID!
+  productId: ID!
+  quantity: Float!
+  costPrice: Float!
+  unitPrice: Float!
+  priceType: String!
+  subtotal: Float!
+}
+
+type Sale {
+  id: ID!
+  code: String!
+  customerId: ID
+  userId: ID!
+  saleDate: String!
+  total: Float!
+  paid: Float!
+  debt: Float!
+  paymentStatus: String!
+  dueDate: String
+  paymentMethod: String
+  items: [SaleItem!]!
+}
+
+input NewSaleItem {
+  productId: ID!
+  quantity: Float!
+}
+
+input NewSale {
+  customerId: ID
+  items: [NewSaleItem!]!
+  paid: Float!
+  dueDate: String
+  paymentMethod: String
+}
+
+extend type Query {
+  sales: [Sale!]!
+  sale(id: ID!): Sale
+  salesByCustomer(customerId: ID!): [Sale!]!
+}
+
+input UpdateSaleItem {
+  productId: ID!
+  quantity: Float!
+}
+
+input UpdateSale {
+  items: [UpdateSaleItem!]!
+}
+
+extend type Mutation {
+  createSale(input: NewSale!): Sale!
+  updateSale(id: ID!, input: UpdateSale!): Sale!
+  deleteSale(id: ID!): Boolean!
+}

@@ -1,0 +1,28 @@
+type DamagedProduct {
+  id: ID!
+  productId: ID!
+  userId: ID!
+  quantity: Float!
+  costPrice: Float!
+  reason: String!
+  note: String
+  date: String!
+}
+
+input NewDamagedProduct {
+  productId: ID!
+  quantity: Float!
+  reason: String!
+  note: String
+}
+
+extend type Query {
+  damagedProducts: [DamagedProduct!]!
+  damagedProduct(id: ID!): DamagedProduct
+  damagedProductsByProduct(productId: ID!): [DamagedProduct!]!
+}
+
+extend type Mutation {
+  createDamagedProduct(input: NewDamagedProduct!): DamagedProduct!
+  deleteDamagedProduct(id: ID!): Boolean!
+}

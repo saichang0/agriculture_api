@@ -1,0 +1,25 @@
+type DebtPayment {
+  id: ID!
+  saleId: ID!
+  customerId: ID!
+  userId: ID!
+  amountPaid: Float!
+  paymentDate: String!
+  note: String
+}
+
+input NewDebtPayment {
+  saleId: ID!
+  amountPaid: Float!
+  note: String
+}
+
+extend type Query {
+  debtPayments: [DebtPayment!]!
+  debtPaymentsBySale(saleId: ID!): [DebtPayment!]!
+  debtPaymentsByCustomer(customerId: ID!): [DebtPayment!]!
+}
+
+extend type Mutation {
+  createDebtPayment(input: NewDebtPayment!): DebtPayment!
+}
