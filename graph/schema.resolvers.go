@@ -7,6 +7,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 )
 
 // Empty is the resolver for the _empty field.
@@ -19,13 +20,22 @@ func (r *queryResolver) Empty(ctx context.Context) (*string, error) {
 	return nil, nil
 }
 
+// Empty is the resolver for the _empty field.
+func (r *subscriptionResolver) Empty(ctx context.Context) (<-chan *string, error) {
+	panic(fmt.Errorf("not implemented: Empty - _empty"))
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
 type (
-	mutationResolver struct{ *Resolver }
-	queryResolver    struct{ *Resolver }
+	mutationResolver     struct{ *Resolver }
+	queryResolver        struct{ *Resolver }
+	subscriptionResolver struct{ *Resolver }
 )

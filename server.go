@@ -9,6 +9,7 @@ import (
 	"agriculture-api/internal/config"
 	"agriculture-api/internal/db"
 	"agriculture-api/internal/repository"
+	"agriculture-api/internal/scansession"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -38,6 +39,7 @@ func main() {
 		DamagedProductRepo: repository.NewDamagedProductRepository(database),
 		ExpenseRepo:        repository.NewExpenseRepository(database),
 		JWT:                jwtManager,
+		ScanBroker:         scansession.NewBroker(),
 	}
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))

@@ -31,6 +31,7 @@ type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
@@ -105,6 +106,7 @@ type ComplexityRoot struct {
 		CreateImport         func(childComplexity int, input model.NewImport) int
 		CreateProduct        func(childComplexity int, input model.NewProduct) int
 		CreateSale           func(childComplexity int, input model.NewSale) int
+		CreateScanSession    func(childComplexity int) int
 		CreateUnit           func(childComplexity int, input model.NewUnit) int
 		CreateUser           func(childComplexity int, input model.NewUser) int
 		DeleteCategory       func(childComplexity int, id string) int
@@ -118,6 +120,7 @@ type ComplexityRoot struct {
 		DeleteUser           func(childComplexity int, id string) int
 		Empty                func(childComplexity int) int
 		Login                func(childComplexity int, username string, password string) int
+		SubmitScan           func(childComplexity int, sessionID string, code string) int
 		UpdateCategory       func(childComplexity int, id string, input model.UpdateCategory) int
 		UpdateCustomer       func(childComplexity int, id string, input model.UpdateCustomer) int
 		UpdateExpense        func(childComplexity int, id string, input model.UpdateExpense) int
@@ -198,6 +201,11 @@ type ComplexityRoot struct {
 		UnitPrice func(childComplexity int) int
 	}
 
+	Subscription struct {
+		Empty        func(childComplexity int) int
+		ScanReceived func(childComplexity int, sessionID string) int
+	}
+
 	Unit struct {
 		ID   func(childComplexity int) int
 		Name func(childComplexity int) int
@@ -240,6 +248,8 @@ type MutationResolver interface {
 	CreateSale(ctx context.Context, input model.NewSale) (*model.Sale, error)
 	UpdateSale(ctx context.Context, id string, input model.UpdateSale) (*model.Sale, error)
 	DeleteSale(ctx context.Context, id string) (bool, error)
+	CreateScanSession(ctx context.Context) (string, error)
+	SubmitScan(ctx context.Context, sessionID string, code string) (bool, error)
 	CreateUnit(ctx context.Context, input model.NewUnit) (*model.Unit, error)
 	UpdateUnit(ctx context.Context, id string, input model.UpdateUnit) (*model.Unit, error)
 	DeleteUnit(ctx context.Context, id string) (bool, error)
@@ -275,6 +285,10 @@ type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	Users(ctx context.Context) ([]*model.User, error)
 	User(ctx context.Context, id string) (*model.User, error)
+}
+type SubscriptionResolver interface {
+	Empty(ctx context.Context) (<-chan *string, error)
+	ScanReceived(ctx context.Context, sessionID string) (<-chan string, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -618,6 +632,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateSale(childComplexity, args["input"].(model.NewSale)), true
+	case "Mutation.createScanSession":
+		if e.ComplexityRoot.Mutation.CreateScanSession == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Mutation.CreateScanSession(childComplexity), true
 	case "Mutation.createUnit":
 		if e.ComplexityRoot.Mutation.CreateUnit == nil {
 			break
@@ -756,6 +776,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.Login(childComplexity, args["username"].(string), args["password"].(string)), true
+	case "Mutation.submitScan":
+		if e.ComplexityRoot.Mutation.SubmitScan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_submitScan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SubmitScan(childComplexity, args["sessionId"].(string), args["code"].(string)), true
 	case "Mutation.updateCategory":
 		if e.ComplexityRoot.Mutation.UpdateCategory == nil {
 			break
@@ -1263,6 +1294,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.SaleItem.UnitPrice(childComplexity), true
 
+	case "Subscription._empty":
+		if e.ComplexityRoot.Subscription.Empty == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Subscription.Empty(childComplexity), true
+	case "Subscription.scanReceived":
+		if e.ComplexityRoot.Subscription.ScanReceived == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_scanReceived_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Subscription.ScanReceived(childComplexity, args["sessionId"].(string)), true
+
 	case "Unit.id":
 		if e.ComplexityRoot.Unit.ID == nil {
 			break
@@ -1395,6 +1444,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				Data: buf.Bytes(),
 			}
 		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, opCtx.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next(ctx)
+
+			if data == nil {
+				return nil
+			}
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
 
 	default:
 		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
@@ -1420,7 +1486,7 @@ func newExecutionContext(
 	}
 }
 
-//go:embed "categories.graphqls" "customers.graphqls" "damagedproducts.graphqls" "debtpayments.graphqls" "expenses.graphqls" "imports.graphqls" "products.graphqls" "sales.graphqls" "schema.graphqls" "units.graphqls" "users.graphqls"
+//go:embed "categories.graphqls" "customers.graphqls" "damagedproducts.graphqls" "debtpayments.graphqls" "expenses.graphqls" "imports.graphqls" "products.graphqls" "sales.graphqls" "scansessions.graphqls" "schema.graphqls" "units.graphqls" "users.graphqls"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -1440,6 +1506,7 @@ var sources = []*ast.Source{
 	{Name: "imports.graphqls", Input: sourceData("imports.graphqls"), BuiltIn: false},
 	{Name: "products.graphqls", Input: sourceData("products.graphqls"), BuiltIn: false},
 	{Name: "sales.graphqls", Input: sourceData("sales.graphqls"), BuiltIn: false},
+	{Name: "scansessions.graphqls", Input: sourceData("scansessions.graphqls"), BuiltIn: false},
 	{Name: "schema.graphqls", Input: sourceData("schema.graphqls"), BuiltIn: false},
 	{Name: "units.graphqls", Input: sourceData("units.graphqls"), BuiltIn: false},
 	{Name: "users.graphqls", Input: sourceData("users.graphqls"), BuiltIn: false},
@@ -2086,6 +2153,28 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_submitScan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sessionId",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNID2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["sessionId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "code",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["code"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateCategory_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2447,6 +2536,20 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_scanReceived_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sessionId",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNID2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["sessionId"] = arg0
 	return args, nil
 }
 
@@ -4290,6 +4393,73 @@ func (ec *executionContext) fieldContext_Mutation_deleteSale(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteSale_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createScanSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_createScanSession(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().CreateScanSession(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNID2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_createScanSession(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Mutation", field, true, true, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _Mutation_submitScan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_submitScan(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SubmitScan(ctx, fc.Args["sessionId"].(string), fc.Args["code"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_submitScan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_submitScan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -6437,6 +6607,73 @@ func (ec *executionContext) _SaleItem_subtotal(ctx context.Context, field graphq
 }
 func (ec *executionContext) fieldContext_SaleItem_subtotal(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("SaleItem", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _Subscription__empty(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Subscription__empty(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Subscription().Empty(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Subscription__empty(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Subscription", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Subscription_scanReceived(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Subscription_scanReceived(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Subscription().ScanReceived(ctx, fc.Args["sessionId"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Subscription_scanReceived(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_scanReceived_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Unit_id(ctx context.Context, field graphql.CollectedField, obj *model.Unit) (ret graphql.Marshaler) {
@@ -9242,6 +9479,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createScanSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createScanSession(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "submitScan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_submitScan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createUnit":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createUnit(ctx, field)
@@ -10201,6 +10452,28 @@ func (ec *executionContext) _SaleItem(ctx context.Context, sel ast.SelectionSet,
 	})
 
 	return out
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		graphql.AddErrorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "_empty":
+		return ec._Subscription__empty(ctx, fields[0])
+	case "scanReceived":
+		return ec._Subscription_scanReceived(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
 }
 
 var unitImplementors = []string{"Unit"}

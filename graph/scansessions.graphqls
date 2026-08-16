@@ -1,0 +1,8 @@
+extend type Mutation {
+  createScanSession: ID!
+  submitScan(sessionId: ID!, code: String!): Boolean!
+}
+
+extend type Subscription {
+  scanReceived(sessionId: ID!): String!
+}

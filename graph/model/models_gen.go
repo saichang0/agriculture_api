@@ -185,6 +185,9 @@ type SaleItem struct {
 	Subtotal  float64 `json:"subtotal"`
 }
 
+type Subscription struct {
+}
+
 type Unit struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
