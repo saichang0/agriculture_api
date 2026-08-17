@@ -130,6 +130,15 @@ type ComplexityRoot struct {
 		UpdateUser           func(childComplexity int, id string, input model.UpdateUser) int
 	}
 
+	PackagingUnit struct {
+		CostPrice       func(childComplexity int) int
+		Factor          func(childComplexity int) int
+		RetailPrice     func(childComplexity int) int
+		UnitID          func(childComplexity int) int
+		WholesaleMinQty func(childComplexity int) int
+		WholesalePrice  func(childComplexity int) int
+	}
+
 	Product struct {
 		Barcode         func(childComplexity int) int
 		CategoryID      func(childComplexity int) int
@@ -138,6 +147,7 @@ type ComplexityRoot struct {
 		ImageURL        func(childComplexity int) int
 		MinStockAlert   func(childComplexity int) int
 		Name            func(childComplexity int) int
+		PackagingUnits  func(childComplexity int) int
 		RetailPrice     func(childComplexity int) int
 		Status          func(childComplexity int) int
 		StockQty        func(childComplexity int) int
@@ -192,12 +202,14 @@ type ComplexityRoot struct {
 
 	SaleItem struct {
 		CostPrice func(childComplexity int) int
+		Factor    func(childComplexity int) int
 		ID        func(childComplexity int) int
 		PriceType func(childComplexity int) int
 		ProductID func(childComplexity int) int
 		Quantity  func(childComplexity int) int
 		SaleID    func(childComplexity int) int
 		Subtotal  func(childComplexity int) int
+		UnitID    func(childComplexity int) int
 		UnitPrice func(childComplexity int) int
 	}
 
@@ -865,6 +877,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Mutation.UpdateUser(childComplexity, args["id"].(string), args["input"].(model.UpdateUser)), true
 
+	case "PackagingUnit.costPrice":
+		if e.ComplexityRoot.PackagingUnit.CostPrice == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PackagingUnit.CostPrice(childComplexity), true
+	case "PackagingUnit.factor":
+		if e.ComplexityRoot.PackagingUnit.Factor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PackagingUnit.Factor(childComplexity), true
+	case "PackagingUnit.retailPrice":
+		if e.ComplexityRoot.PackagingUnit.RetailPrice == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PackagingUnit.RetailPrice(childComplexity), true
+	case "PackagingUnit.unitId":
+		if e.ComplexityRoot.PackagingUnit.UnitID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PackagingUnit.UnitID(childComplexity), true
+	case "PackagingUnit.wholesaleMinQty":
+		if e.ComplexityRoot.PackagingUnit.WholesaleMinQty == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PackagingUnit.WholesaleMinQty(childComplexity), true
+	case "PackagingUnit.wholesalePrice":
+		if e.ComplexityRoot.PackagingUnit.WholesalePrice == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PackagingUnit.WholesalePrice(childComplexity), true
+
 	case "Product.barcode":
 		if e.ComplexityRoot.Product.Barcode == nil {
 			break
@@ -907,6 +956,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Product.Name(childComplexity), true
+	case "Product.packagingUnits":
+		if e.ComplexityRoot.Product.PackagingUnits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Product.PackagingUnits(childComplexity), true
 	case "Product.retailPrice":
 		if e.ComplexityRoot.Product.RetailPrice == nil {
 			break
@@ -1251,6 +1306,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SaleItem.CostPrice(childComplexity), true
+	case "SaleItem.factor":
+		if e.ComplexityRoot.SaleItem.Factor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SaleItem.Factor(childComplexity), true
 	case "SaleItem.id":
 		if e.ComplexityRoot.SaleItem.ID == nil {
 			break
@@ -1287,6 +1348,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SaleItem.Subtotal(childComplexity), true
+	case "SaleItem.unitId":
+		if e.ComplexityRoot.SaleItem.UnitID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SaleItem.UnitID(childComplexity), true
 	case "SaleItem.unitPrice":
 		if e.ComplexityRoot.SaleItem.UnitPrice == nil {
 			break
@@ -1387,6 +1454,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNewSaleItem,
 		ec.unmarshalInputNewUnit,
 		ec.unmarshalInputNewUser,
+		ec.unmarshalInputPackagingUnitInput,
 		ec.unmarshalInputUpdateCategory,
 		ec.unmarshalInputUpdateCustomer,
 		ec.unmarshalInputUpdateExpense,
@@ -1635,6 +1703,24 @@ func (ec *executionContext) childFields_Import(ctx context.Context, field graphq
 	return nil, fmt.Errorf("no field named %q was found under type Import", field.Name)
 }
 
+func (ec *executionContext) childFields_PackagingUnit(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "unitId":
+		return ec.fieldContext_PackagingUnit_unitId(ctx, field)
+	case "factor":
+		return ec.fieldContext_PackagingUnit_factor(ctx, field)
+	case "costPrice":
+		return ec.fieldContext_PackagingUnit_costPrice(ctx, field)
+	case "retailPrice":
+		return ec.fieldContext_PackagingUnit_retailPrice(ctx, field)
+	case "wholesalePrice":
+		return ec.fieldContext_PackagingUnit_wholesalePrice(ctx, field)
+	case "wholesaleMinQty":
+		return ec.fieldContext_PackagingUnit_wholesaleMinQty(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PackagingUnit", field.Name)
+}
+
 func (ec *executionContext) childFields_Product(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -1663,6 +1749,8 @@ func (ec *executionContext) childFields_Product(ctx context.Context, field graph
 		return ec.fieldContext_Product_minStockAlert(ctx, field)
 	case "status":
 		return ec.fieldContext_Product_status(ctx, field)
+	case "packagingUnits":
+		return ec.fieldContext_Product_packagingUnits(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
 }
@@ -1715,6 +1803,10 @@ func (ec *executionContext) childFields_SaleItem(ctx context.Context, field grap
 		return ec.fieldContext_SaleItem_priceType(ctx, field)
 	case "subtotal":
 		return ec.fieldContext_SaleItem_subtotal(ctx, field)
+	case "unitId":
+		return ec.fieldContext_SaleItem_unitId(ctx, field)
+	case "factor":
+		return ec.fieldContext_SaleItem_factor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type SaleItem", field.Name)
 }
@@ -4774,6 +4866,144 @@ func (ec *executionContext) fieldContext_Mutation_deleteUser(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _PackagingUnit_unitId(ctx context.Context, field graphql.CollectedField, obj *model.PackagingUnit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PackagingUnit_unitId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UnitID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNID2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PackagingUnit_unitId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PackagingUnit", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _PackagingUnit_factor(ctx context.Context, field graphql.CollectedField, obj *model.PackagingUnit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PackagingUnit_factor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Factor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PackagingUnit_factor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PackagingUnit", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _PackagingUnit_costPrice(ctx context.Context, field graphql.CollectedField, obj *model.PackagingUnit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PackagingUnit_costPrice(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CostPrice, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PackagingUnit_costPrice(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PackagingUnit", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _PackagingUnit_retailPrice(ctx context.Context, field graphql.CollectedField, obj *model.PackagingUnit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PackagingUnit_retailPrice(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RetailPrice, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PackagingUnit_retailPrice(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PackagingUnit", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _PackagingUnit_wholesalePrice(ctx context.Context, field graphql.CollectedField, obj *model.PackagingUnit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PackagingUnit_wholesalePrice(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.WholesalePrice, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PackagingUnit_wholesalePrice(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PackagingUnit", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _PackagingUnit_wholesaleMinQty(ctx context.Context, field graphql.CollectedField, obj *model.PackagingUnit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PackagingUnit_wholesaleMinQty(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.WholesaleMinQty, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PackagingUnit_wholesaleMinQty(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PackagingUnit", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
 func (ec *executionContext) _Product_id(ctx context.Context, field graphql.CollectedField, obj *model.Product) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5071,6 +5301,38 @@ func (ec *executionContext) _Product_status(ctx context.Context, field graphql.C
 }
 func (ec *executionContext) fieldContext_Product_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Product", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Product_packagingUnits(ctx context.Context, field graphql.CollectedField, obj *model.Product) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Product_packagingUnits(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PackagingUnits, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.PackagingUnit) graphql.Marshaler {
+			return ec.marshalNPackagingUnit2ᚕᚖagricultureᚑapiᚋgraphᚋmodelᚐPackagingUnitᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Product_packagingUnits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Product",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_PackagingUnit(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Query__empty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6606,6 +6868,52 @@ func (ec *executionContext) _SaleItem_subtotal(ctx context.Context, field graphq
 	)
 }
 func (ec *executionContext) fieldContext_SaleItem_subtotal(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SaleItem", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _SaleItem_unitId(ctx context.Context, field graphql.CollectedField, obj *model.SaleItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SaleItem_unitId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UnitID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOID2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_SaleItem_unitId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SaleItem", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _SaleItem_factor(ctx context.Context, field graphql.CollectedField, obj *model.SaleItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SaleItem_factor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Factor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SaleItem_factor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("SaleItem", field, false, false, errors.New("field of type Float does not have child fields"))
 }
 
@@ -8217,7 +8525,7 @@ func (ec *executionContext) unmarshalInputNewProduct(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"barcode", "name", "imageUrl", "categoryId", "unitId", "costPrice", "retailPrice", "wholesalePrice", "wholesaleMinQty", "stockQty", "minStockAlert"}
+	fieldsInOrder := [...]string{"barcode", "name", "imageUrl", "categoryId", "unitId", "costPrice", "retailPrice", "wholesalePrice", "wholesaleMinQty", "stockQty", "minStockAlert", "packagingUnits"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8301,6 +8609,13 @@ func (ec *executionContext) unmarshalInputNewProduct(ctx context.Context, obj an
 				return it, err
 			}
 			it.MinStockAlert = data
+		case "packagingUnits":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("packagingUnits"))
+			data, err := ec.unmarshalOPackagingUnitInput2ᚕᚖagricultureᚑapiᚋgraphᚋmodelᚐPackagingUnitInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PackagingUnits = data
 		}
 	}
 	return it, nil
@@ -8375,7 +8690,7 @@ func (ec *executionContext) unmarshalInputNewSaleItem(ctx context.Context, obj a
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"productId", "quantity"}
+	fieldsInOrder := [...]string{"productId", "quantity", "unitId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8396,6 +8711,13 @@ func (ec *executionContext) unmarshalInputNewSaleItem(ctx context.Context, obj a
 				return it, err
 			}
 			it.Quantity = data
+		case "unitId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unitId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UnitID = data
 		}
 	}
 	return it, nil
@@ -8491,6 +8813,71 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj any) 
 				return it, err
 			}
 			it.Phone = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPackagingUnitInput(ctx context.Context, obj any) (model.PackagingUnitInput, error) {
+	var it model.PackagingUnitInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"unitId", "factor", "costPrice", "retailPrice", "wholesalePrice", "wholesaleMinQty"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "unitId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unitId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UnitID = data
+		case "factor":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("factor"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Factor = data
+		case "costPrice":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("costPrice"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CostPrice = data
+		case "retailPrice":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("retailPrice"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RetailPrice = data
+		case "wholesalePrice":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("wholesalePrice"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WholesalePrice = data
+		case "wholesaleMinQty":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("wholesaleMinQty"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WholesaleMinQty = data
 		}
 	}
 	return it, nil
@@ -8632,7 +9019,7 @@ func (ec *executionContext) unmarshalInputUpdateProduct(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"barcode", "name", "imageUrl", "categoryId", "unitId", "costPrice", "retailPrice", "wholesalePrice", "wholesaleMinQty", "stockQty", "minStockAlert", "status"}
+	fieldsInOrder := [...]string{"barcode", "name", "imageUrl", "categoryId", "unitId", "costPrice", "retailPrice", "wholesalePrice", "wholesaleMinQty", "stockQty", "minStockAlert", "status", "packagingUnits"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8723,6 +9110,13 @@ func (ec *executionContext) unmarshalInputUpdateProduct(ctx context.Context, obj
 				return it, err
 			}
 			it.Status = data
+		case "packagingUnits":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("packagingUnits"))
+			data, err := ec.unmarshalOPackagingUnitInput2ᚕᚖagricultureᚑapiᚋgraphᚋmodelᚐPackagingUnitInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PackagingUnits = data
 		}
 	}
 	return it, nil
@@ -8769,7 +9163,7 @@ func (ec *executionContext) unmarshalInputUpdateSaleItem(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"productId", "quantity"}
+	fieldsInOrder := [...]string{"productId", "quantity", "unitId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8790,6 +9184,13 @@ func (ec *executionContext) unmarshalInputUpdateSaleItem(ctx context.Context, ob
 				return it, err
 			}
 			it.Quantity = data
+		case "unitId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unitId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UnitID = data
 		}
 	}
 	return it, nil
@@ -9563,6 +9964,69 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var packagingUnitImplementors = []string{"PackagingUnit"}
+
+func (ec *executionContext) _PackagingUnit(ctx context.Context, sel ast.SelectionSet, obj *model.PackagingUnit) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, packagingUnitImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PackagingUnit")
+		case "unitId":
+			out.Values[i] = ec._PackagingUnit_unitId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "factor":
+			out.Values[i] = ec._PackagingUnit_factor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "costPrice":
+			out.Values[i] = ec._PackagingUnit_costPrice(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "retailPrice":
+			out.Values[i] = ec._PackagingUnit_retailPrice(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "wholesalePrice":
+			out.Values[i] = ec._PackagingUnit_wholesalePrice(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "wholesaleMinQty":
+			out.Values[i] = ec._PackagingUnit_wholesaleMinQty(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var productImplementors = []string{"Product"}
 
 func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, obj *model.Product) graphql.Marshaler {
@@ -9637,6 +10101,11 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "status":
 			out.Values[i] = ec._Product_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "packagingUnits":
+			out.Values[i] = ec._Product_packagingUnits(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -10430,6 +10899,16 @@ func (ec *executionContext) _SaleItem(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "subtotal":
 			out.Values[i] = ec._SaleItem_subtotal(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unitId":
+			out.Values[i] = ec._SaleItem_unitId(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "factor":
+			out.Values[i] = ec._SaleItem_factor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -11306,6 +11785,37 @@ func (ec *executionContext) unmarshalNNewUser2agricultureᚑapiᚋgraphᚋmodel�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNPackagingUnit2ᚕᚖagricultureᚑapiᚋgraphᚋmodelᚐPackagingUnitᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PackagingUnit) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNPackagingUnit2ᚖagricultureᚑapiᚋgraphᚋmodelᚐPackagingUnit(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPackagingUnit2ᚖagricultureᚑapiᚋgraphᚋmodelᚐPackagingUnit(ctx context.Context, sel ast.SelectionSet, v *model.PackagingUnit) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PackagingUnit(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNPackagingUnitInput2ᚖagricultureᚑapiᚋgraphᚋmodelᚐPackagingUnitInput(ctx context.Context, v any) (*model.PackagingUnitInput, error) {
+	res, err := ec.unmarshalInputPackagingUnitInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNProduct2agricultureᚑapiᚋgraphᚋmodelᚐProduct(ctx context.Context, sel ast.SelectionSet, v model.Product) graphql.Marshaler {
 	return ec._Product(ctx, sel, &v)
 }
@@ -11778,6 +12288,23 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOPackagingUnitInput2ᚕᚖagricultureᚑapiᚋgraphᚋmodelᚐPackagingUnitInputᚄ(ctx context.Context, v any) ([]*model.PackagingUnitInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]*model.PackagingUnitInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNPackagingUnitInput2ᚖagricultureᚑapiᚋgraphᚋmodelᚐPackagingUnitInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) marshalOProduct2ᚖagricultureᚑapiᚋgraphᚋmodelᚐProduct(ctx context.Context, sel ast.SelectionSet, v *model.Product) graphql.Marshaler {

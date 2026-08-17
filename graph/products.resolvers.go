@@ -25,6 +25,11 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input model.NewPro
 		return nil, fmt.Errorf("invalid unitId: %w", err)
 	}
 
+	packagingUnits, err := packagingUnitDocsFromInput(input.PackagingUnits)
+	if err != nil {
+		return nil, err
+	}
+
 	doc := &model.ProductDoc{
 		Barcode:         input.Barcode,
 		Name:            input.Name,
@@ -37,6 +42,7 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input model.NewPro
 		WholesaleMinQty: int32(input.WholesaleMinQty),
 		StockQty:        input.StockQty,
 		MinStockAlert:   input.MinStockAlert,
+		PackagingUnits:  packagingUnits,
 	}
 	if err := r.ProductRepo.Create(ctx, doc); err != nil {
 		return nil, err
@@ -95,6 +101,13 @@ func (r *mutationResolver) UpdateProduct(ctx context.Context, id string, input m
 	}
 	if input.Status != nil {
 		set["status"] = *input.Status
+	}
+	if input.PackagingUnits != nil {
+		packagingUnits, err := packagingUnitDocsFromInput(input.PackagingUnits)
+		if err != nil {
+			return nil, err
+		}
+		set["packagingUnits"] = packagingUnits
 	}
 
 	doc, err := r.ProductRepo.Update(ctx, oid, set)

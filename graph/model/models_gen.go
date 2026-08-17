@@ -101,17 +101,18 @@ type NewImport struct {
 }
 
 type NewProduct struct {
-	Barcode         *string `json:"barcode,omitempty"`
-	Name            string  `json:"name"`
-	ImageURL        *string `json:"imageUrl,omitempty"`
-	CategoryID      string  `json:"categoryId"`
-	UnitID          string  `json:"unitId"`
-	CostPrice       float64 `json:"costPrice"`
-	RetailPrice     float64 `json:"retailPrice"`
-	WholesalePrice  float64 `json:"wholesalePrice"`
-	WholesaleMinQty int     `json:"wholesaleMinQty"`
-	StockQty        float64 `json:"stockQty"`
-	MinStockAlert   float64 `json:"minStockAlert"`
+	Barcode         *string               `json:"barcode,omitempty"`
+	Name            string                `json:"name"`
+	ImageURL        *string               `json:"imageUrl,omitempty"`
+	CategoryID      string                `json:"categoryId"`
+	UnitID          string                `json:"unitId"`
+	CostPrice       float64               `json:"costPrice"`
+	RetailPrice     float64               `json:"retailPrice"`
+	WholesalePrice  float64               `json:"wholesalePrice"`
+	WholesaleMinQty int                   `json:"wholesaleMinQty"`
+	StockQty        float64               `json:"stockQty"`
+	MinStockAlert   float64               `json:"minStockAlert"`
+	PackagingUnits  []*PackagingUnitInput `json:"packagingUnits,omitempty"`
 }
 
 type NewSale struct {
@@ -125,6 +126,7 @@ type NewSale struct {
 type NewSaleItem struct {
 	ProductID string  `json:"productId"`
 	Quantity  float64 `json:"quantity"`
+	UnitID    *string `json:"unitId,omitempty"`
 }
 
 type NewUnit struct {
@@ -140,20 +142,39 @@ type NewUser struct {
 	Phone     string `json:"phone"`
 }
 
-type Product struct {
-	ID              string  `json:"id"`
-	Barcode         *string `json:"barcode,omitempty"`
-	Name            string  `json:"name"`
-	ImageURL        *string `json:"imageUrl,omitempty"`
-	CategoryID      string  `json:"categoryId"`
+type PackagingUnit struct {
 	UnitID          string  `json:"unitId"`
+	Factor          float64 `json:"factor"`
 	CostPrice       float64 `json:"costPrice"`
 	RetailPrice     float64 `json:"retailPrice"`
 	WholesalePrice  float64 `json:"wholesalePrice"`
 	WholesaleMinQty int     `json:"wholesaleMinQty"`
-	StockQty        float64 `json:"stockQty"`
-	MinStockAlert   float64 `json:"minStockAlert"`
-	Status          string  `json:"status"`
+}
+
+type PackagingUnitInput struct {
+	UnitID          string  `json:"unitId"`
+	Factor          float64 `json:"factor"`
+	CostPrice       float64 `json:"costPrice"`
+	RetailPrice     float64 `json:"retailPrice"`
+	WholesalePrice  float64 `json:"wholesalePrice"`
+	WholesaleMinQty int     `json:"wholesaleMinQty"`
+}
+
+type Product struct {
+	ID              string           `json:"id"`
+	Barcode         *string          `json:"barcode,omitempty"`
+	Name            string           `json:"name"`
+	ImageURL        *string          `json:"imageUrl,omitempty"`
+	CategoryID      string           `json:"categoryId"`
+	UnitID          string           `json:"unitId"`
+	CostPrice       float64          `json:"costPrice"`
+	RetailPrice     float64          `json:"retailPrice"`
+	WholesalePrice  float64          `json:"wholesalePrice"`
+	WholesaleMinQty int              `json:"wholesaleMinQty"`
+	StockQty        float64          `json:"stockQty"`
+	MinStockAlert   float64          `json:"minStockAlert"`
+	Status          string           `json:"status"`
+	PackagingUnits  []*PackagingUnit `json:"packagingUnits"`
 }
 
 type Query struct {
@@ -183,6 +204,8 @@ type SaleItem struct {
 	UnitPrice float64 `json:"unitPrice"`
 	PriceType string  `json:"priceType"`
 	Subtotal  float64 `json:"subtotal"`
+	UnitID    *string `json:"unitId,omitempty"`
+	Factor    float64 `json:"factor"`
 }
 
 type Subscription struct {
@@ -211,18 +234,19 @@ type UpdateExpense struct {
 }
 
 type UpdateProduct struct {
-	Barcode         *string  `json:"barcode,omitempty"`
-	Name            *string  `json:"name,omitempty"`
-	ImageURL        *string  `json:"imageUrl,omitempty"`
-	CategoryID      *string  `json:"categoryId,omitempty"`
-	UnitID          *string  `json:"unitId,omitempty"`
-	CostPrice       *float64 `json:"costPrice,omitempty"`
-	RetailPrice     *float64 `json:"retailPrice,omitempty"`
-	WholesalePrice  *float64 `json:"wholesalePrice,omitempty"`
-	WholesaleMinQty *int     `json:"wholesaleMinQty,omitempty"`
-	StockQty        *float64 `json:"stockQty,omitempty"`
-	MinStockAlert   *float64 `json:"minStockAlert,omitempty"`
-	Status          *string  `json:"status,omitempty"`
+	Barcode         *string               `json:"barcode,omitempty"`
+	Name            *string               `json:"name,omitempty"`
+	ImageURL        *string               `json:"imageUrl,omitempty"`
+	CategoryID      *string               `json:"categoryId,omitempty"`
+	UnitID          *string               `json:"unitId,omitempty"`
+	CostPrice       *float64              `json:"costPrice,omitempty"`
+	RetailPrice     *float64              `json:"retailPrice,omitempty"`
+	WholesalePrice  *float64              `json:"wholesalePrice,omitempty"`
+	WholesaleMinQty *int                  `json:"wholesaleMinQty,omitempty"`
+	StockQty        *float64              `json:"stockQty,omitempty"`
+	MinStockAlert   *float64              `json:"minStockAlert,omitempty"`
+	Status          *string               `json:"status,omitempty"`
+	PackagingUnits  []*PackagingUnitInput `json:"packagingUnits,omitempty"`
 }
 
 type UpdateSale struct {
@@ -232,6 +256,7 @@ type UpdateSale struct {
 type UpdateSaleItem struct {
 	ProductID string  `json:"productId"`
 	Quantity  float64 `json:"quantity"`
+	UnitID    *string `json:"unitId,omitempty"`
 }
 
 type UpdateUnit struct {

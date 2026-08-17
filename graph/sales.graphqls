@@ -7,6 +7,8 @@ type SaleItem {
   unitPrice: Float!
   priceType: String!
   subtotal: Float!
+  unitId: ID
+  factor: Float!
 }
 
 type Sale {
@@ -27,6 +29,7 @@ type Sale {
 input NewSaleItem {
   productId: ID!
   quantity: Float!
+  unitId: ID
 }
 
 input NewSale {
@@ -46,6 +49,7 @@ extend type Query {
 input UpdateSaleItem {
   productId: ID!
   quantity: Float!
+  unitId: ID
 }
 
 input UpdateSale {

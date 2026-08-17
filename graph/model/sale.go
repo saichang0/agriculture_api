@@ -25,4 +25,9 @@ type SaleItemDoc struct {
 	UnitPrice float64       `bson:"unitPrice"`
 	PriceType string        `bson:"priceType"`
 	Subtotal  float64       `bson:"subtotal"`
+	// UnitID/Factor snapshot which selling unit this line was sold in, so historical
+	// invoices stay correct even if the product's packaging units are edited/removed
+	// later. UnitID is nil when sold in the product's base unit (Factor is always 1 then).
+	UnitID *bson.ObjectID `bson:"unitId,omitempty"`
+	Factor float64        `bson:"factor"`
 }

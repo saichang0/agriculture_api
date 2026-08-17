@@ -1,3 +1,21 @@
+type PackagingUnit {
+  unitId: ID!
+  factor: Float!
+  costPrice: Float!
+  retailPrice: Float!
+  wholesalePrice: Float!
+  wholesaleMinQty: Int!
+}
+
+input PackagingUnitInput {
+  unitId: ID!
+  factor: Float!
+  costPrice: Float!
+  retailPrice: Float!
+  wholesalePrice: Float!
+  wholesaleMinQty: Int!
+}
+
 type Product {
   id: ID!
   barcode: String
@@ -12,6 +30,7 @@ type Product {
   stockQty: Float!
   minStockAlert: Float!
   status: String!
+  packagingUnits: [PackagingUnit!]!
 }
 
 input NewProduct {
@@ -26,6 +45,7 @@ input NewProduct {
   wholesaleMinQty: Int!
   stockQty: Float!
   minStockAlert: Float!
+  packagingUnits: [PackagingUnitInput!]
 }
 
 input UpdateProduct {
@@ -41,6 +61,7 @@ input UpdateProduct {
   stockQty: Float
   minStockAlert: Float
   status: String
+  packagingUnits: [PackagingUnitInput!]
 }
 
 extend type Query {

@@ -59,15 +59,22 @@ func (r *mutationResolver) CreateSale(ctx context.Context, input model.NewSale) 
 		if itemInput.Quantity <= 0 {
 			return nil, errors.New("quantity must be greater than zero")
 		}
-		if itemInput.Quantity > product.StockQty {
-			return nil, fmt.Errorf("insufficient stock for %s: have %.2f, requested %.2f", product.Name, product.StockQty, itemInput.Quantity)
+
+		factor, costPrice, retailPrice, wholesalePrice, wholesaleMinQty, unitID, err := resolveSaleUnit(product, itemInput.UnitID)
+		if err != nil {
+			return nil, err
+		}
+		baseQty := itemInput.Quantity * factor
+
+		if baseQty > product.StockQty {
+			return nil, fmt.Errorf("insufficient stock for %s: have %.2f, requested %.2f", product.Name, product.StockQty, baseQty)
 		}
 
 		priceType := "RETAIL"
-		unitPrice := product.RetailPrice
-		if itemInput.Quantity >= float64(product.WholesaleMinQty) {
+		unitPrice := retailPrice
+		if itemInput.Quantity >= float64(wholesaleMinQty) {
 			priceType = "WHOLESALE"
-			unitPrice = product.WholesalePrice
+			unitPrice = wholesalePrice
 		}
 
 		subtotal := unitPrice * itemInput.Quantity
@@ -76,10 +83,12 @@ func (r *mutationResolver) CreateSale(ctx context.Context, input model.NewSale) 
 		items = append(items, &model.SaleItemDoc{
 			ProductID: productID,
 			Quantity:  itemInput.Quantity,
-			CostPrice: product.CostPrice,
+			CostPrice: costPrice,
 			UnitPrice: unitPrice,
 			PriceType: priceType,
 			Subtotal:  subtotal,
+			UnitID:    unitID,
+			Factor:    factor,
 		})
 	}
 
@@ -117,7 +126,7 @@ func (r *mutationResolver) CreateSale(ctx context.Context, input model.NewSale) 
 	}
 
 	for _, item := range items {
-		if err := r.ProductRepo.AdjustStock(ctx, item.ProductID, -item.Quantity, nil); err != nil {
+		if err := r.ProductRepo.AdjustStock(ctx, item.ProductID, -(item.Quantity * item.Factor), nil); err != nil {
 			return nil, err
 		}
 	}
@@ -163,10 +172,16 @@ func (r *mutationResolver) UpdateSale(ctx context.Context, id string, input mode
 	// Load every product referenced by either the old or new item lists up front, so
 	// stock-sufficiency checks below account for both the return of old quantities and
 	// the consumption of new ones at once (a product appearing in both old and new
-	// items must not be double-counted).
+	// items must not be double-counted). Deltas accumulate in base units throughout,
+	// since old/new lines can be in different selling units (e.g. old sold as loose
+	// bottles, corrected to a case) and stock is only ever tracked in the base unit.
 	productDeltas := make(map[bson.ObjectID]float64)
 	for _, item := range oldItems {
-		productDeltas[item.ProductID] += item.Quantity
+		oldFactor := item.Factor
+		if oldFactor == 0 {
+			oldFactor = 1
+		}
+		productDeltas[item.ProductID] += item.Quantity * oldFactor
 	}
 
 	newItems := make([]*model.SaleItemDoc, 0, len(input.Items))
@@ -189,11 +204,16 @@ func (r *mutationResolver) UpdateSale(ctx context.Context, id string, input mode
 			return nil, errors.New("quantity must be greater than zero")
 		}
 
+		factor, costPrice, retailPrice, wholesalePrice, wholesaleMinQty, unitID, err := resolveSaleUnit(product, itemInput.UnitID)
+		if err != nil {
+			return nil, err
+		}
+
 		priceType := "RETAIL"
-		unitPrice := product.RetailPrice
-		if itemInput.Quantity >= float64(product.WholesaleMinQty) {
+		unitPrice := retailPrice
+		if itemInput.Quantity >= float64(wholesaleMinQty) {
 			priceType = "WHOLESALE"
-			unitPrice = product.WholesalePrice
+			unitPrice = wholesalePrice
 		}
 
 		subtotal := unitPrice * itemInput.Quantity
@@ -202,13 +222,15 @@ func (r *mutationResolver) UpdateSale(ctx context.Context, id string, input mode
 		newItems = append(newItems, &model.SaleItemDoc{
 			ProductID: productID,
 			Quantity:  itemInput.Quantity,
-			CostPrice: product.CostPrice,
+			CostPrice: costPrice,
 			UnitPrice: unitPrice,
 			PriceType: priceType,
 			Subtotal:  subtotal,
+			UnitID:    unitID,
+			Factor:    factor,
 		})
 
-		productDeltas[productID] -= itemInput.Quantity
+		productDeltas[productID] -= itemInput.Quantity * factor
 	}
 
 	// Stock sufficiency check: a positive delta means stock would be returned (fine),
@@ -290,7 +312,11 @@ func (r *mutationResolver) DeleteSale(ctx context.Context, id string) (bool, err
 	}
 
 	for _, item := range items {
-		if err := r.ProductRepo.AdjustStock(ctx, item.ProductID, item.Quantity, nil); err != nil {
+		factor := item.Factor
+		if factor == 0 {
+			factor = 1
+		}
+		if err := r.ProductRepo.AdjustStock(ctx, item.ProductID, item.Quantity*factor, nil); err != nil {
 			return false, err
 		}
 	}

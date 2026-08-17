@@ -1,9 +1,12 @@
 package graph
 
 import (
+	"fmt"
 	"strconv"
 
 	"agriculture-api/graph/model"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func toGraphUser(d *model.UserDoc) *model.User {
@@ -56,6 +59,18 @@ func toGraphImport(d *model.ImportDoc) *model.Import {
 }
 
 func toGraphSaleItem(d *model.SaleItemDoc) *model.SaleItem {
+	var unitID *string
+	if d.UnitID != nil {
+		hex := d.UnitID.Hex()
+		unitID = &hex
+	}
+
+	factor := d.Factor
+	if factor == 0 {
+		// Sales created before the Factor field existed default to 1 (base unit).
+		factor = 1
+	}
+
 	return &model.SaleItem{
 		ID:        d.ID.Hex(),
 		SaleID:    d.SaleID.Hex(),
@@ -65,6 +80,8 @@ func toGraphSaleItem(d *model.SaleItemDoc) *model.SaleItem {
 		UnitPrice: d.UnitPrice,
 		PriceType: d.PriceType,
 		Subtotal:  d.Subtotal,
+		UnitID:    unitID,
+		Factor:    factor,
 	}
 }
 
@@ -132,7 +149,23 @@ func toGraphExpense(d *model.ExpenseDoc) *model.Expense {
 	}
 }
 
+func toGraphPackagingUnit(d model.PackagingUnitDoc) *model.PackagingUnit {
+	return &model.PackagingUnit{
+		UnitID:          d.UnitID.Hex(),
+		Factor:          d.Factor,
+		CostPrice:       d.CostPrice,
+		RetailPrice:     d.RetailPrice,
+		WholesalePrice:  d.WholesalePrice,
+		WholesaleMinQty: int(d.WholesaleMinQty),
+	}
+}
+
 func toGraphProduct(d *model.ProductDoc) *model.Product {
+	packagingUnits := make([]*model.PackagingUnit, 0, len(d.PackagingUnits))
+	for _, pu := range d.PackagingUnits {
+		packagingUnits = append(packagingUnits, toGraphPackagingUnit(pu))
+	}
+
 	return &model.Product{
 		ID:              d.ID.Hex(),
 		Barcode:         d.Barcode,
@@ -147,5 +180,54 @@ func toGraphProduct(d *model.ProductDoc) *model.Product {
 		StockQty:        d.StockQty,
 		MinStockAlert:   d.MinStockAlert,
 		Status:          d.Status,
+		PackagingUnits:  packagingUnits,
 	}
+}
+
+// packagingUnitDocsFromInput converts GraphQL packaging-unit inputs to Mongo docs,
+// validating unitId hex and factor > 0.
+func packagingUnitDocsFromInput(inputs []*model.PackagingUnitInput) ([]model.PackagingUnitDoc, error) {
+	docs := make([]model.PackagingUnitDoc, 0, len(inputs))
+	for _, in := range inputs {
+		unitID, err := bson.ObjectIDFromHex(in.UnitID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid packaging unit unitId: %w", err)
+		}
+		if in.Factor <= 0 {
+			return nil, fmt.Errorf("packaging unit factor must be greater than zero")
+		}
+		docs = append(docs, model.PackagingUnitDoc{
+			UnitID:          unitID,
+			Factor:          in.Factor,
+			CostPrice:       in.CostPrice,
+			RetailPrice:     in.RetailPrice,
+			WholesalePrice:  in.WholesalePrice,
+			WholesaleMinQty: int32(in.WholesaleMinQty),
+		})
+	}
+	return docs, nil
+}
+
+// resolveSaleUnit determines the pricing/factor for a sale line, given an optional
+// packaging-unit id. unitIDHex == nil means the product's base unit: factor 1, prices
+// straight from the product (this keeps single-unit products behaving exactly as
+// before this feature existed). Otherwise it looks up the matching packaging unit —
+// its own prices/factor are used verbatim, never derived from the base unit's price.
+func resolveSaleUnit(product *model.ProductDoc, unitIDHex *string) (factor float64, costPrice, retailPrice, wholesalePrice float64, wholesaleMinQty int32, unitID *bson.ObjectID, err error) {
+	if unitIDHex == nil {
+		return 1, product.CostPrice, product.RetailPrice, product.WholesalePrice, product.WholesaleMinQty, nil, nil
+	}
+
+	oid, err := bson.ObjectIDFromHex(*unitIDHex)
+	if err != nil {
+		return 0, 0, 0, 0, 0, nil, fmt.Errorf("invalid unitId: %w", err)
+	}
+
+	for _, pu := range product.PackagingUnits {
+		if pu.UnitID == oid {
+			return pu.Factor, pu.CostPrice, pu.RetailPrice, pu.WholesalePrice, pu.WholesaleMinQty, &oid, nil
+		}
+	}
+
+	return 0, 0, 0, 0, 0, nil, fmt.Errorf("product %s has no packaging unit %s", product.Name, *unitIDHex)
 }
