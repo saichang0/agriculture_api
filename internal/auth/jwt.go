@@ -9,6 +9,12 @@ import (
 
 var ErrInvalidToken = errors.New("invalid token")
 
+// ErrUnauthenticated is returned by resolvers that require a signed-in user
+// when no valid access token was presented. The GraphQL error presenter maps
+// this to extensions.code = "UNAUTHENTICATED" so the frontend can reliably
+// detect an expired access token and trigger a silent refresh.
+var ErrUnauthenticated = errors.New("not authenticated")
+
 type Claims struct {
 	UserID string `json:"userId"`
 	Role   string `json:"role"`

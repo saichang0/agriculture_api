@@ -11,9 +11,38 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
+
+// issueTokenPair generates a fresh access token + refresh token for a user,
+// persisting the refresh token's hash so it can be looked up and rotated later.
+func (r *mutationResolver) issueTokenPair(ctx context.Context, doc *model.UserDoc) (*model.AuthPayload, error) {
+	accessToken, err := r.JWT.Generate(doc.ID.Hex(), doc.Role)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshSecret, err := auth.NewRefreshTokenSecret()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.RefreshTokenRepo.Create(ctx, &model.RefreshTokenDoc{
+		UserID:    doc.ID,
+		TokenHash: auth.HashRefreshToken(refreshSecret),
+		ExpiresAt: time.Now().Add(r.RefreshTokenTTL),
+	}); err != nil {
+		return nil, err
+	}
+
+	return &model.AuthPayload{
+		Token:        accessToken,
+		RefreshToken: refreshSecret,
+		User:         toGraphUser(doc),
+	}, nil
+}
 
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, username string, password string) (*model.AuthPayload, error) {
@@ -28,15 +57,46 @@ func (r *mutationResolver) Login(ctx context.Context, username string, password 
 		return nil, errors.New("user is not active")
 	}
 
-	token, err := r.JWT.Generate(doc.ID.Hex(), doc.Role)
+	return r.issueTokenPair(ctx, doc)
+}
+
+// RefreshToken is the resolver for the refreshToken field.
+func (r *mutationResolver) RefreshToken(ctx context.Context, refreshToken string) (*model.AuthPayload, error) {
+	tokenHash := auth.HashRefreshToken(refreshToken)
+
+	existing, err := r.RefreshTokenRepo.FindByHash(ctx, tokenHash)
 	if err != nil {
 		return nil, err
 	}
+	if existing == nil || existing.ExpiresAt.Before(time.Now()) {
+		return nil, errors.New("refresh token is invalid or expired")
+	}
 
-	return &model.AuthPayload{
-		Token: token,
-		User:  toGraphUser(doc),
-	}, nil
+	doc, err := r.UserRepo.FindByID(ctx, existing.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if doc == nil || doc.Status != "ACTIVE" {
+		return nil, errors.New("user is not active")
+	}
+
+	// Rotate: the old refresh token is single-use. Issuing a new one with a
+	// fresh 7-day expiry on every refresh is what gives the sliding-window
+	// behavior — as long as the app is opened at least once within 7 days,
+	// the session keeps extending itself instead of expiring.
+	if err := r.RefreshTokenRepo.DeleteByHash(ctx, tokenHash); err != nil {
+		return nil, err
+	}
+
+	return r.issueTokenPair(ctx, doc)
+}
+
+// Logout is the resolver for the logout field.
+func (r *mutationResolver) Logout(ctx context.Context, refreshToken string) (bool, error) {
+	if err := r.RefreshTokenRepo.DeleteByHash(ctx, auth.HashRefreshToken(refreshToken)); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // CreateUser is the resolver for the createUser field.
@@ -108,7 +168,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (bool, err
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
-		return nil, errors.New("not authenticated")
+		return nil, auth.ErrUnauthenticated
 	}
 
 	oid, err := bson.ObjectIDFromHex(claims.UserID)
@@ -129,7 +189,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	if _, ok := auth.ClaimsFromContext(ctx); !ok {
-		return nil, errors.New("not authenticated")
+		return nil, auth.ErrUnauthenticated
 	}
 
 	docs, err := r.UserRepo.FindAll(ctx)
@@ -147,7 +207,7 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	if _, ok := auth.ClaimsFromContext(ctx); !ok {
-		return nil, errors.New("not authenticated")
+		return nil, auth.ErrUnauthenticated
 	}
 
 	oid, err := bson.ObjectIDFromHex(id)

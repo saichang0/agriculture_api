@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net/http"
 
@@ -11,9 +13,12 @@ import (
 	"agriculture-api/internal/repository"
 	"agriculture-api/internal/scansession"
 
+	"github.com/99designs/gqlgen/graphql"
+	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/rs/cors"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 func main() {
@@ -38,11 +43,24 @@ func main() {
 		DebtPaymentRepo:    repository.NewDebtPaymentRepository(database),
 		DamagedProductRepo: repository.NewDamagedProductRepository(database),
 		ExpenseRepo:        repository.NewExpenseRepository(database),
+		RefreshTokenRepo:   repository.NewRefreshTokenRepository(database),
 		JWT:                jwtManager,
+		RefreshTokenTTL:    cfg.RefreshTokenTTL,
 		ScanBroker:         scansession.NewBroker(),
 	}
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
+
+	// Marks auth.ErrUnauthenticated with extensions.code = "UNAUTHENTICATED" so the
+	// frontend can distinguish "access token expired, please refresh" from any
+	// other resolver error without relying on a fragile message-string match.
+	srv.SetErrorPresenter(func(ctx context.Context, err error) *gqlerror.Error {
+		gqlErr := graphql.DefaultErrorPresenter(ctx, err)
+		if errors.Is(err, auth.ErrUnauthenticated) {
+			errcode.Set(gqlErr, "UNAUTHENTICATED")
+		}
+		return gqlErr
+	})
 
 	mux := http.NewServeMux()
 	mux.Handle("/", playground.Handler("GraphQL playground", "/query"))

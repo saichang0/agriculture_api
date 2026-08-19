@@ -9,7 +9,6 @@ import (
 	"agriculture-api/graph/model"
 	"agriculture-api/internal/auth"
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -20,7 +19,7 @@ import (
 func (r *mutationResolver) CreateImport(ctx context.Context, input model.NewImport) (*model.Import, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
-		return nil, errors.New("not authenticated")
+		return nil, auth.ErrUnauthenticated
 	}
 	userID, err := bson.ObjectIDFromHex(claims.UserID)
 	if err != nil {

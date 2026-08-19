@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"time"
+
 	"agriculture-api/internal/auth"
 	"agriculture-api/internal/repository"
 	"agriculture-api/internal/scansession"
@@ -17,6 +19,8 @@ type Resolver struct {
 	DebtPaymentRepo    *repository.DebtPaymentRepository
 	DamagedProductRepo *repository.DamagedProductRepository
 	ExpenseRepo        *repository.ExpenseRepository
+	RefreshTokenRepo   *repository.RefreshTokenRepository
 	JWT                *auth.JWTManager
+	RefreshTokenTTL    time.Duration
 	ScanBroker         *scansession.Broker
 }

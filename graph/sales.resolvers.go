@@ -20,7 +20,7 @@ import (
 func (r *mutationResolver) CreateSale(ctx context.Context, input model.NewSale) (*model.Sale, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
-		return nil, errors.New("not authenticated")
+		return nil, auth.ErrUnauthenticated
 	}
 	userID, err := bson.ObjectIDFromHex(claims.UserID)
 	if err != nil {
