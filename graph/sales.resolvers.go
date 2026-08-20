@@ -41,7 +41,7 @@ func (r *mutationResolver) CreateSale(ctx context.Context, input model.NewSale) 
 	}
 
 	items := make([]*model.SaleItemDoc, 0, len(input.Items))
-	var total float64
+	var subtotal float64
 
 	for _, itemInput := range input.Items {
 		productID, err := bson.ObjectIDFromHex(itemInput.ProductID)
@@ -77,8 +77,8 @@ func (r *mutationResolver) CreateSale(ctx context.Context, input model.NewSale) 
 			unitPrice = wholesalePrice
 		}
 
-		subtotal := unitPrice * itemInput.Quantity
-		total += subtotal
+		itemSubtotal := unitPrice * itemInput.Quantity
+		subtotal += itemSubtotal
 
 		items = append(items, &model.SaleItemDoc{
 			ProductID: productID,
@@ -86,7 +86,7 @@ func (r *mutationResolver) CreateSale(ctx context.Context, input model.NewSale) 
 			CostPrice: costPrice,
 			UnitPrice: unitPrice,
 			PriceType: priceType,
-			Subtotal:  subtotal,
+			Subtotal:  itemSubtotal,
 			UnitID:    unitID,
 			Factor:    factor,
 		})
@@ -95,6 +95,21 @@ func (r *mutationResolver) CreateSale(ctx context.Context, input model.NewSale) 
 	if input.Paid < 0 {
 		return nil, errors.New("paid cannot be negative")
 	}
+
+	// Discount is a haggled-down reduction on the whole invoice — clamped to
+	// [0, subtotal] so it can never make the total negative or exceed the
+	// pre-discount price.
+	discount := 0.0
+	if input.Discount != nil {
+		discount = *input.Discount
+	}
+	if discount < 0 {
+		return nil, errors.New("discount cannot be negative")
+	}
+	if discount > subtotal {
+		discount = subtotal
+	}
+	total := subtotal - discount
 
 	paid := input.Paid
 	if paid > total {
@@ -113,6 +128,8 @@ func (r *mutationResolver) CreateSale(ctx context.Context, input model.NewSale) 
 		CustomerID:    customerID,
 		UserID:        userID,
 		SaleDate:      time.Now().Unix(),
+		Subtotal:      subtotal,
+		Discount:      discount,
 		Total:         total,
 		Paid:          paid,
 		Debt:          debt,
@@ -185,7 +202,7 @@ func (r *mutationResolver) UpdateSale(ctx context.Context, id string, input mode
 	}
 
 	newItems := make([]*model.SaleItemDoc, 0, len(input.Items))
-	var total float64
+	var subtotal float64
 
 	for _, itemInput := range input.Items {
 		productID, err := bson.ObjectIDFromHex(itemInput.ProductID)
@@ -216,8 +233,8 @@ func (r *mutationResolver) UpdateSale(ctx context.Context, id string, input mode
 			unitPrice = wholesalePrice
 		}
 
-		subtotal := unitPrice * itemInput.Quantity
-		total += subtotal
+		itemSubtotal := unitPrice * itemInput.Quantity
+		subtotal += itemSubtotal
 
 		newItems = append(newItems, &model.SaleItemDoc{
 			ProductID: productID,
@@ -225,7 +242,7 @@ func (r *mutationResolver) UpdateSale(ctx context.Context, id string, input mode
 			CostPrice: costPrice,
 			UnitPrice: unitPrice,
 			PriceType: priceType,
-			Subtotal:  subtotal,
+			Subtotal:  itemSubtotal,
 			UnitID:    unitID,
 			Factor:    factor,
 		})
@@ -248,6 +265,21 @@ func (r *mutationResolver) UpdateSale(ctx context.Context, id string, input mode
 		}
 	}
 
+	// Preserve the sale's existing discount unless the caller explicitly sends a new
+	// one — correcting line items shouldn't silently wipe out a discount that was
+	// already agreed with the customer.
+	discount := sale.Discount
+	if input.Discount != nil {
+		discount = *input.Discount
+	}
+	if discount < 0 {
+		return nil, errors.New("discount cannot be negative")
+	}
+	if discount > subtotal {
+		discount = subtotal
+	}
+	total := subtotal - discount
+
 	paid := sale.Paid
 	if paid > total {
 		paid = total
@@ -261,7 +293,7 @@ func (r *mutationResolver) UpdateSale(ctx context.Context, id string, input mode
 		paymentStatus = "PAID"
 	}
 
-	if err := r.SaleRepo.ReplaceItems(ctx, oid, newItems, total, paid, debt, paymentStatus); err != nil {
+	if err := r.SaleRepo.ReplaceItems(ctx, oid, newItems, subtotal, discount, total, paid, debt, paymentStatus); err != nil {
 		return nil, err
 	}
 
@@ -283,6 +315,8 @@ func (r *mutationResolver) UpdateSale(ctx context.Context, id string, input mode
 		}
 	}
 
+	sale.Subtotal = subtotal
+	sale.Discount = discount
 	sale.Total = total
 	sale.Paid = paid
 	sale.Debt = debt

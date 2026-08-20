@@ -17,6 +17,8 @@ type Sale {
   customerId: ID
   userId: ID!
   saleDate: String!
+  subtotal: Float!
+  discount: Float!
   total: Float!
   paid: Float!
   debt: Float!
@@ -36,6 +38,7 @@ input NewSale {
   customerId: ID
   items: [NewSaleItem!]!
   paid: Float!
+  discount: Float
   dueDate: String
   paymentMethod: String
 }
@@ -54,6 +57,7 @@ input UpdateSaleItem {
 
 input UpdateSale {
   items: [UpdateSaleItem!]!
+  discount: Float
 }
 
 extend type Mutation {

@@ -3,11 +3,17 @@ package model
 import "go.mongodb.org/mongo-driver/v2/bson"
 
 type SaleDoc struct {
-	ID            bson.ObjectID  `bson:"_id,omitempty"`
-	Code          string         `bson:"code"`
-	CustomerID    *bson.ObjectID `bson:"customerId,omitempty"`
-	UserID        bson.ObjectID  `bson:"userId"`
-	SaleDate      int64          `bson:"saleDate"`
+	ID         bson.ObjectID  `bson:"_id,omitempty"`
+	Code       string         `bson:"code"`
+	CustomerID *bson.ObjectID `bson:"customerId,omitempty"`
+	UserID     bson.ObjectID  `bson:"userId"`
+	SaleDate   int64          `bson:"saleDate"`
+	// Subtotal is the pre-discount sum of item subtotals; Total is what the customer
+	// actually owes (Subtotal - Discount). Kept separate rather than only storing Total
+	// so a bargained-down invoice still shows its original price and the amount haggled
+	// off, and so reports can subtract Discount from revenue without re-summing items.
+	Subtotal      float64        `bson:"subtotal"`
+	Discount      float64        `bson:"discount"`
 	Total         float64        `bson:"total"`
 	Paid          float64        `bson:"paid"`
 	Debt          float64        `bson:"debt"`

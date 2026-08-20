@@ -192,6 +192,7 @@ type ComplexityRoot struct {
 		Code          func(childComplexity int) int
 		CustomerID    func(childComplexity int) int
 		Debt          func(childComplexity int) int
+		Discount      func(childComplexity int) int
 		DueDate       func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Items         func(childComplexity int) int
@@ -199,6 +200,7 @@ type ComplexityRoot struct {
 		PaymentMethod func(childComplexity int) int
 		PaymentStatus func(childComplexity int) int
 		SaleDate      func(childComplexity int) int
+		Subtotal      func(childComplexity int) int
 		Total         func(childComplexity int) int
 		UserID        func(childComplexity int) int
 	}
@@ -1278,6 +1280,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Sale.Debt(childComplexity), true
+	case "Sale.discount":
+		if e.ComplexityRoot.Sale.Discount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Sale.Discount(childComplexity), true
 	case "Sale.dueDate":
 		if e.ComplexityRoot.Sale.DueDate == nil {
 			break
@@ -1320,6 +1328,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Sale.SaleDate(childComplexity), true
+	case "Sale.subtotal":
+		if e.ComplexityRoot.Sale.Subtotal == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Sale.Subtotal(childComplexity), true
 	case "Sale.total":
 		if e.ComplexityRoot.Sale.Total == nil {
 			break
@@ -1802,6 +1816,10 @@ func (ec *executionContext) childFields_Sale(ctx context.Context, field graphql.
 		return ec.fieldContext_Sale_userId(ctx, field)
 	case "saleDate":
 		return ec.fieldContext_Sale_saleDate(ctx, field)
+	case "subtotal":
+		return ec.fieldContext_Sale_subtotal(ctx, field)
+	case "discount":
+		return ec.fieldContext_Sale_discount(ctx, field)
 	case "total":
 		return ec.fieldContext_Sale_total(ctx, field)
 	case "paid":
@@ -6691,6 +6709,52 @@ func (ec *executionContext) fieldContext_Sale_saleDate(_ context.Context, field 
 	return graphql.NewScalarFieldContext("Sale", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _Sale_subtotal(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Sale_subtotal(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Subtotal, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Sale_subtotal(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Sale", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _Sale_discount(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Sale_discount(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Discount, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Sale_discount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Sale", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
 func (ec *executionContext) _Sale_total(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8806,7 +8870,7 @@ func (ec *executionContext) unmarshalInputNewSale(ctx context.Context, obj any) 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"customerId", "items", "paid", "dueDate", "paymentMethod"}
+	fieldsInOrder := [...]string{"customerId", "items", "paid", "discount", "dueDate", "paymentMethod"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8834,6 +8898,13 @@ func (ec *executionContext) unmarshalInputNewSale(ctx context.Context, obj any) 
 				return it, err
 			}
 			it.Paid = data
+		case "discount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("discount"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Discount = data
 		case "dueDate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dueDate"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -9307,7 +9378,7 @@ func (ec *executionContext) unmarshalInputUpdateSale(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"items"}
+	fieldsInOrder := [...]string{"items", "discount"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9321,6 +9392,13 @@ func (ec *executionContext) unmarshalInputUpdateSale(ctx context.Context, obj an
 				return it, err
 			}
 			it.Items = data
+		case "discount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("discount"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Discount = data
 		}
 	}
 	return it, nil
@@ -10984,6 +11062,16 @@ func (ec *executionContext) _Sale(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "saleDate":
 			out.Values[i] = ec._Sale_saleDate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subtotal":
+			out.Values[i] = ec._Sale_subtotal(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "discount":
+			out.Values[i] = ec._Sale_discount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

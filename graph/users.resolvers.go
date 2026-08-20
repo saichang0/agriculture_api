@@ -16,34 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-// issueTokenPair generates a fresh access token + refresh token for a user,
-// persisting the refresh token's hash so it can be looked up and rotated later.
-func (r *mutationResolver) issueTokenPair(ctx context.Context, doc *model.UserDoc) (*model.AuthPayload, error) {
-	accessToken, err := r.JWT.Generate(doc.ID.Hex(), doc.Role)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshSecret, err := auth.NewRefreshTokenSecret()
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.RefreshTokenRepo.Create(ctx, &model.RefreshTokenDoc{
-		UserID:    doc.ID,
-		TokenHash: auth.HashRefreshToken(refreshSecret),
-		ExpiresAt: time.Now().Add(r.RefreshTokenTTL),
-	}); err != nil {
-		return nil, err
-	}
-
-	return &model.AuthPayload{
-		Token:        accessToken,
-		RefreshToken: refreshSecret,
-		User:         toGraphUser(doc),
-	}, nil
-}
-
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, username string, password string) (*model.AuthPayload, error) {
 	doc, err := r.UserRepo.FindByUsername(ctx, username)

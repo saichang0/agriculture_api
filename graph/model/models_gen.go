@@ -120,6 +120,7 @@ type NewSale struct {
 	CustomerID    *string        `json:"customerId,omitempty"`
 	Items         []*NewSaleItem `json:"items"`
 	Paid          float64        `json:"paid"`
+	Discount      *float64       `json:"discount,omitempty"`
 	DueDate       *string        `json:"dueDate,omitempty"`
 	PaymentMethod *string        `json:"paymentMethod,omitempty"`
 }
@@ -187,6 +188,8 @@ type Sale struct {
 	CustomerID    *string     `json:"customerId,omitempty"`
 	UserID        string      `json:"userId"`
 	SaleDate      string      `json:"saleDate"`
+	Subtotal      float64     `json:"subtotal"`
+	Discount      float64     `json:"discount"`
 	Total         float64     `json:"total"`
 	Paid          float64     `json:"paid"`
 	Debt          float64     `json:"debt"`
@@ -251,7 +254,8 @@ type UpdateProduct struct {
 }
 
 type UpdateSale struct {
-	Items []*UpdateSaleItem `json:"items"`
+	Items    []*UpdateSaleItem `json:"items"`
+	Discount *float64          `json:"discount,omitempty"`
 }
 
 type UpdateSaleItem struct {

@@ -186,7 +186,7 @@ func (r *SaleRepository) ApplyPayment(ctx context.Context, id bson.ObjectID, amo
 // place — the sale keeps its original _id, code, and saleDate. Stock and customer debt
 // deltas are the caller's responsibility (see UpdateSale resolver): this only writes
 // the sale + saleItems documents.
-func (r *SaleRepository) ReplaceItems(ctx context.Context, id bson.ObjectID, items []*model.SaleItemDoc, total, paid, debt float64, paymentStatus string) error {
+func (r *SaleRepository) ReplaceItems(ctx context.Context, id bson.ObjectID, items []*model.SaleItemDoc, subtotal, discount, total, paid, debt float64, paymentStatus string) error {
 	if _, err := r.saleItemsCol.DeleteMany(ctx, bson.M{"saleId": id}); err != nil {
 		return err
 	}
@@ -204,6 +204,8 @@ func (r *SaleRepository) ReplaceItems(ctx context.Context, id bson.ObjectID, ite
 	}
 
 	_, err := r.salesCol.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{
+		"subtotal":      subtotal,
+		"discount":      discount,
 		"total":         total,
 		"paid":          paid,
 		"debt":          debt,

@@ -103,6 +103,8 @@ func toGraphSale(d *model.SaleDoc, items []*model.SaleItemDoc) *model.Sale {
 		CustomerID:    customerID,
 		UserID:        d.UserID.Hex(),
 		SaleDate:      strconv.FormatInt(d.SaleDate, 10),
+		Subtotal:      d.Subtotal,
+		Discount:      d.Discount,
 		Total:         d.Total,
 		Paid:          d.Paid,
 		Debt:          d.Debt,
