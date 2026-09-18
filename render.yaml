@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: agriculture-api
+    runtime: go
+    plan: free
+    buildCommand: go build -o main .
+    startCommand: ./main
+    healthCheckPath: /healthz
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        value: agriculture
+      - key: JWT_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
