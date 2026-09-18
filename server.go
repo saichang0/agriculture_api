@@ -64,7 +64,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
 	})
 	mux.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	mux.Handle("/query", srv)
@@ -77,5 +79,9 @@ func main() {
 	})
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", cfg.Port)
-	log.Fatal(http.ListenAndServe(":"+cfg.Port, corsHandler.Handler(auth.Middleware(jwtManager)(mux))))
+	handler := corsHandler.Handler(auth.Middleware(jwtManager)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("request method=%s path=%s origin=%q", r.Method, r.URL.Path, r.Header.Get("Origin"))
+		mux.ServeHTTP(w, r)
+	})))
+	log.Fatal(http.ListenAndServe(":"+cfg.Port, handler))
 }
