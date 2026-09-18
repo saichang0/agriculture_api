@@ -69,7 +69,7 @@ func main() {
 		_, _ = w.Write([]byte("ok"))
 	})
 	mux.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	mux.Handle("/query", srv)
+	mux.Handle("/query", auth.Middleware(jwtManager)(srv))
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   cfg.AllowedOrigins,
@@ -79,16 +79,9 @@ func main() {
 	})
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", cfg.Port)
-	requestLogger := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("request method=%s path=%s origin=%q", r.Method, r.URL.Path, r.Header.Get("Origin"))
-		mux.ServeHTTP(w, r)
-	})
-	handler := http.Handler(requestLogger)
-	handler = auth.Middleware(jwtManager)(handler)
-	handler = corsHandler.Handler(handler)
 	logHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("incoming method=%s path=%s origin=%q", r.Method, r.URL.Path, r.Header.Get("Origin"))
-		handler.ServeHTTP(w, r)
+		mux.ServeHTTP(w, r)
 	})
-	log.Fatal(http.ListenAndServe(":"+cfg.Port, logHandler))
+	log.Fatal(http.ListenAndServe(":"+cfg.Port, corsHandler.Handler(logHandler)))
 }
