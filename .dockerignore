@@ -1,0 +1,8 @@
+.env
+.git
+.air.toml
+tmp/
+README.md
+SCHEMA.md
+Dockerfile
+.dockerignore
