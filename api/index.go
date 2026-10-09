@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"agriculture-api/internal/config"
-	"agriculture-api/internal/server"
+	application "agriculture-api/app"
 )
 
 var (
@@ -17,7 +16,7 @@ var (
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	initOnce.Do(func() {
-		app, initErr = server.NewHandler(config.Load())
+		app, initErr = application.NewHandler()
 	})
 	if initErr != nil {
 		log.Printf("failed to initialize API handler: %v", initErr)
